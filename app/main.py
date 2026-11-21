@@ -6,7 +6,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from .database import Base, engine
+from .database import init_db
 from .routers import api, demo_store
 from .scheduler import run_price_check
 
@@ -17,7 +17,7 @@ scheduler = AsyncIOScheduler(timezone="UTC")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    init_db()
     scheduler.add_job(
         run_price_check,
         "interval",
@@ -36,6 +36,7 @@ app = FastAPI(title="Price Parser API", version="2.0.0", lifespan=lifespan)
 app.include_router(api.router)
 app.include_router(api.admin_router)
 app.include_router(api.export_router)
+app.include_router(api.stats_router)
 app.include_router(demo_store.router)
 
 

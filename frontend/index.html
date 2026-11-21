@@ -1,166 +1,309 @@
 <!doctype html>
-<html lang="ru" class="h-full">
+<html lang="ru" class="h-full scroll-smooth">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Price Tracker — дашборд</title>
+  <title>Ценомер — мониторинг цен</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    body {
-      background:
-        radial-gradient(1100px 500px at 85% -10%, rgba(56, 189, 248, .12), transparent 60%),
-        radial-gradient(800px 400px at 0% 100%, rgba(16, 185, 129, .08), transparent 60%),
-        #0b1220;
-    }
-    dialog::backdrop { background: rgba(2, 6, 23, .72); backdrop-filter: blur(4px); }
-    .card-enter { animation: card-in .25s ease-out both; }
-    @keyframes card-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    dialog::backdrop { background: rgba(28, 25, 23, .45); }
+    .card-enter { animation: card-in .2s ease-out both; }
+    @keyframes card-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
   </style>
 </head>
-<body class="min-h-full text-slate-200 antialiased">
-  <div class="mx-auto flex min-h-screen max-w-7xl flex-col px-4 sm:px-6">
-    <header class="flex flex-col gap-4 border-b border-slate-800/80 py-5 md:flex-row md:items-center md:justify-between">
-      <div class="flex items-center gap-3">
-        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/15 text-lg text-sky-300">📈</div>
-        <div>
-          <h1 class="text-lg font-semibold tracking-tight text-white">Price Tracker</h1>
-          <p class="text-xs text-slate-400">Мониторинг цен и история изменений</p>
-        </div>
-        <span id="admin-badge" hidden class="rounded-full border border-sky-400/30 bg-sky-400/10 px-2.5 py-1 text-[11px] font-semibold text-sky-300">ADMIN</span>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <a href="/demo-store/laptop" target="_blank" rel="noopener"
-           class="rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:text-white">
-          Демо: ноутбук
-        </a>
-        <a href="/demo-store/phone" target="_blank" rel="noopener"
-           class="rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:text-white">
-          Демо: телефон
-        </a>
-        <a href="/docs" target="_blank" rel="noopener"
-           class="rounded-lg border border-slate-700 bg-slate-900/60 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:text-white">
-          API Docs
-        </a>
+<body class="min-h-full bg-stone-50 text-stone-900 antialiased">
+  <header class="sticky top-0 z-30 border-b border-stone-200 bg-stone-50/90 backdrop-blur">
+    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+      <a href="/" class="flex items-center gap-2.5">
+        <span class="grid h-8 w-8 place-items-center rounded-md bg-teal-700 text-sm font-bold text-white">Ц</span>
+        <span class="text-[15px] font-semibold tracking-tight">Ценомер</span>
+      </a>
+
+      <nav class="hidden items-center gap-7 text-sm text-stone-600 md:flex">
+        <a href="#products" class="transition hover:text-stone-900">Товары</a>
+        <a href="#analytics" class="transition hover:text-stone-900">Аналитика</a>
+        <a href="#about" class="transition hover:text-stone-900">О проекте</a>
+        <a href="/docs" target="_blank" rel="noopener" class="transition hover:text-stone-900">API</a>
+      </nav>
+
+      <div class="flex items-center gap-2">
+        <span id="admin-badge" hidden
+              class="rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-800">админ</span>
         <button id="login-btn" type="button"
-                class="rounded-lg bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-slate-950 transition hover:bg-sky-400">
+                class="rounded-md border border-stone-300 bg-white px-3.5 py-1.5 text-sm font-medium text-stone-700 transition hover:bg-stone-100">
           Войти
         </button>
         <button id="logout-btn" type="button" hidden
-                class="rounded-lg border border-slate-700 bg-slate-900/60 px-3.5 py-1.5 text-xs font-semibold text-slate-300 transition hover:border-rose-500/40 hover:text-rose-300">
+                class="rounded-md border border-stone-300 bg-white px-3.5 py-1.5 text-sm font-medium text-stone-700 transition hover:bg-stone-100">
           Выйти
         </button>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <main class="flex-1 space-y-6 py-8">
-      <section id="admin-panel" hidden class="rounded-2xl border border-slate-800 bg-slate-900/50 p-6">
-        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h2 class="text-base font-semibold text-white">Панель администратора</h2>
-            <p class="mt-1 text-sm text-slate-400">Добавление товаров, ручной замер и экспорт отчётов.</p>
-          </div>
-          <button id="export-btn" type="button"
-                  class="rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-emerald-400">
-            Скачать отчёт Excel (.xlsx)
-          </button>
+  <main class="mx-auto max-w-6xl px-4 sm:px-6">
+    <section class="border-b border-stone-200 py-12 sm:py-16">
+      <p class="text-xs font-semibold uppercase tracking-[0.18em] text-teal-700">Мониторинг цен</p>
+      <h1 class="mt-3 max-w-2xl text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+        Следим за ценами, пока вы заняты другими делами
+      </h1>
+      <p class="mt-4 max-w-xl text-[15px] leading-relaxed text-stone-600">
+        Добавьте ссылку на товар — сервис сам найдёт цену, сохранит историю замеров и покажет,
+        когда покупка действительно выгодна.
+      </p>
+
+      <div class="mt-6 flex flex-wrap items-center gap-3">
+        <a href="/demo-store/laptop" target="_blank" rel="noopener"
+           class="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-800">
+          Открыть демо-ноутбук
+        </a>
+        <a href="/demo-store/phone" target="_blank" rel="noopener"
+           class="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-100">
+          Демо-смартфон
+        </a>
+        <span class="text-xs text-stone-500">Цена на демо-странице меняется при каждом обновлении</span>
+      </div>
+
+      <dl class="mt-8 flex flex-wrap gap-x-8 gap-y-3 text-sm">
+        <div class="flex items-baseline gap-2">
+          <dt class="text-stone-500">Товаров</dt>
+          <dd id="stat-total" class="font-semibold tabular-nums">—</dd>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <dt class="text-stone-500">Выгодных</dt>
+          <dd id="stat-deals" class="font-semibold tabular-nums">—</dd>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <dt class="text-stone-500">Замеров</dt>
+          <dd id="stat-checks" class="font-semibold tabular-nums">—</dd>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <dt class="text-stone-500">Последняя проверка</dt>
+          <dd id="stat-last" class="font-semibold">—</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section id="products" class="scroll-mt-20 py-10">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-semibold tracking-tight">Отслеживаемые товары</h2>
+          <p id="products-count" class="mt-1 text-sm text-stone-500">Загрузка…</p>
         </div>
 
-        <form id="add-form" class="mt-6 grid gap-4 md:grid-cols-2">
-          <label class="block">
-            <span class="mb-1.5 block text-xs font-medium text-slate-400">Название товара</span>
-            <input id="add-title" required maxlength="500" placeholder="Ноутбук DemoBook 15"
-                   class="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-sky-500">
-          </label>
-          <label class="block">
-            <span class="mb-1.5 block text-xs font-medium text-slate-400">Ссылка на товар</span>
-            <input id="add-url" type="url" required placeholder="http://127.0.0.1:8000/demo-store/laptop"
-                   class="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-sky-500">
-          </label>
-          <label class="block">
-            <span class="mb-1.5 block text-xs font-medium text-slate-400">CSS-селектор цены</span>
-            <input id="add-selector" maxlength="255" placeholder=".product-price (можно оставить пустым)"
-                   class="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 font-mono text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-sky-500">
-          </label>
-          <label class="block">
-            <span class="mb-1.5 block text-xs font-medium text-slate-400">Целевая цена, ₽</span>
-            <input id="add-target" type="number" min="0" step="0.01" placeholder="90000"
-                   class="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-sky-500">
-          </label>
-          <div class="flex flex-wrap items-center gap-2 md:col-span-2">
-            <button type="submit"
-                    class="rounded-lg bg-sky-500 px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-sky-400">
-              Добавить товар
-            </button>
-            <button id="fill-laptop" type="button"
-                    class="rounded-lg border border-slate-700 px-3 py-2 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:text-white">
-              Пример: ноутбук
-            </button>
-            <button id="fill-phone" type="button"
-                    class="rounded-lg border border-slate-700 px-3 py-2 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:text-white">
-              Пример: телефон
-            </button>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="relative">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"
+                 class="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400">
+              <circle cx="9" cy="9" r="5.5"></circle>
+              <path d="m13.5 13.5 3 3" stroke-linecap="round"></path>
+            </svg>
+            <input id="search" type="search" placeholder="Поиск по названию"
+                   class="w-52 rounded-md border border-stone-300 bg-white py-1.5 pl-8 pr-3 text-sm placeholder:text-stone-400 focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600">
           </div>
-        </form>
-        <p class="mt-4 text-xs text-slate-500">
-          Подсказка для быстрого теста: URL <span class="font-mono text-slate-400">http://127.0.0.1:8000/demo-store/laptop</span>,
-          селектор <span class="font-mono text-slate-400">.product-price</span>.
-        </p>
-      </section>
 
+          <select id="sort"
+                  class="rounded-md border border-stone-300 bg-white px-2.5 py-1.5 text-sm text-stone-700 focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600">
+            <option value="newest">Сначала новые</option>
+            <option value="title">По названию</option>
+            <option value="price_asc">Цена: по возрастанию</option>
+            <option value="price_desc">Цена: по убыванию</option>
+          </select>
+
+          <div class="flex overflow-hidden rounded-md border border-stone-300 bg-white text-sm">
+            <button type="button" data-deals="false"
+                    class="filter-tab bg-stone-900 px-3 py-1.5 font-medium text-white">Все</button>
+            <button type="button" data-deals="true"
+                    class="filter-tab border-l border-stone-300 px-3 py-1.5 text-stone-600 transition hover:bg-stone-100">Выгодные</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="admin-bar" hidden
+           class="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2.5">
+        <button id="add-btn" type="button"
+                class="rounded-md bg-teal-700 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-teal-800">
+          Добавить товар
+        </button>
+        <button id="seed-btn" type="button"
+                class="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-700 transition hover:bg-stone-100">
+          Демо-товары
+        </button>
+        <button id="check-all-btn" type="button"
+                class="rounded-md border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-700 transition hover:bg-stone-100 disabled:opacity-50">
+          Проверить все цены
+        </button>
+        <div class="ml-auto flex items-center gap-2">
+          <span class="text-xs text-stone-400">Отчёт:</span>
+          <button id="export-excel" type="button"
+                  class="rounded-md border border-stone-300 px-2.5 py-1.5 text-xs font-medium text-stone-700 transition hover:bg-stone-100">
+            Excel
+          </button>
+          <button id="export-csv" type="button"
+                  class="rounded-md border border-stone-300 px-2.5 py-1.5 text-xs font-medium text-stone-700 transition hover:bg-stone-100">
+            CSV
+          </button>
+        </div>
+      </div>
+
+      <div id="products-grid" class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
+    </section>
+
+    <section id="analytics" class="scroll-mt-20 border-t border-stone-200 py-10">
       <div class="grid gap-6 lg:grid-cols-5">
-        <section class="lg:col-span-3">
-          <div class="mb-3 flex items-center justify-between">
-            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">Отслеживаемые товары</h2>
-            <span id="products-count" class="text-xs text-slate-500"></span>
-          </div>
-          <div id="products" class="grid gap-4 sm:grid-cols-2"></div>
-        </section>
+        <div class="lg:col-span-2">
+          <h2 class="text-lg font-semibold tracking-tight">История цен</h2>
+          <p id="chart-title" class="mt-1 text-sm text-stone-500">Выберите товар, чтобы увидеть динамику</p>
+          <p id="chart-meta" class="mt-1 text-xs text-stone-400"></p>
 
-        <aside class="lg:col-span-2">
-          <div class="sticky top-6 rounded-2xl border border-slate-800 bg-slate-900/50 p-5">
-            <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-400">Динамика цены</h2>
-            <p id="chart-title" class="mt-2 truncate text-base font-medium text-slate-100">Выберите товар</p>
-            <div class="relative mt-4 h-72">
+          <div id="range-tabs" class="mt-4 flex w-fit overflow-hidden rounded-md border border-stone-300 bg-white text-xs">
+            <button type="button" data-range="7"
+                    class="range-tab px-3 py-1.5 text-stone-600 transition hover:bg-stone-100">7 дней</button>
+            <button type="button" data-range="30"
+                    class="range-tab border-l border-stone-300 px-3 py-1.5 text-stone-600 transition hover:bg-stone-100">30 дней</button>
+            <button type="button" data-range="all"
+                    class="range-tab border-l border-stone-300 bg-stone-900 px-3 py-1.5 font-medium text-white">Всё время</button>
+          </div>
+        </div>
+
+        <div class="lg:col-span-3">
+          <div class="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
+            <div class="relative h-72">
               <canvas id="chart-canvas" hidden></canvas>
               <p id="chart-empty"
-                 class="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-800 text-center text-sm text-slate-500">
+                 class="flex h-full items-center justify-center rounded-md border border-dashed border-stone-200 px-6 text-center text-sm text-stone-500">
                 Нет данных для графика
               </p>
             </div>
           </div>
-        </aside>
+        </div>
       </div>
-    </main>
+    </section>
 
-    <footer class="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-800/80 py-4 text-xs text-slate-500">
-      <span>Price Tracker — демо-проект.</span>
-      <a href="/demo-store/laptop" target="_blank" rel="noopener" class="text-sky-400/80 transition hover:text-sky-300">Тестовый ноутбук</a>
-      <a href="/demo-store/phone" target="_blank" rel="noopener" class="text-sky-400/80 transition hover:text-sky-300">Тестовый телефон</a>
-    </footer>
-  </div>
+    <section id="about" class="scroll-mt-20 border-t border-stone-200 py-10">
+      <h2 class="text-lg font-semibold tracking-tight">О проекте</h2>
+      <div class="mt-4 grid gap-6 text-sm leading-relaxed text-stone-600 sm:grid-cols-3">
+        <div>
+          <h3 class="font-medium text-stone-900">Парсинг без браузера</h3>
+          <p class="mt-1.5">Цена забирается через httpx и BeautifulSoup: по CSS-селектору или автоматически по микроразметке и мета-тегам.</p>
+        </div>
+        <div>
+          <h3 class="font-medium text-stone-900">История в PostgreSQL</h3>
+          <p class="mt-1.5">Планировщик APScheduler проверяет товары по расписанию и сохраняет каждый замер для построения графика.</p>
+        </div>
+        <div>
+          <h3 class="font-medium text-stone-900">Отчёты и безопасность</h3>
+          <p class="mt-1.5">Выгрузка в Excel и CSV, JWT-авторизация администратора, ограничение частоты запросов и защита от SSRF.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="border-t border-stone-200 bg-white">
+    <div class="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-stone-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <p>Ценомер — учебный проект на FastAPI, 2026.</p>
+      <div class="flex gap-5">
+        <a href="#products" class="transition hover:text-stone-800">Товары</a>
+        <a href="/docs" target="_blank" rel="noopener" class="transition hover:text-stone-800">API</a>
+        <a href="/health" target="_blank" rel="noopener" class="transition hover:text-stone-800">Статус</a>
+      </div>
+    </div>
+  </footer>
 
   <dialog id="login-dialog"
-          class="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-6 text-slate-200 shadow-2xl">
+          class="w-full max-w-sm rounded-xl border border-stone-200 bg-white p-6 text-stone-900 shadow-xl">
     <form id="login-form" class="space-y-4">
       <div>
-        <h2 class="text-base font-semibold text-white">Вход администратора</h2>
-        <p class="mt-1 text-xs text-slate-400">Токен доступа хранится локально и действует 8 часов.</p>
+        <h2 class="text-base font-semibold">Вход для администратора</h2>
+        <p class="mt-1 text-xs text-stone-500">Токен хранится локально и действует 8 часов.</p>
       </div>
       <label class="block">
-        <span class="mb-1.5 block text-xs font-medium text-slate-400">Пароль</span>
+        <span class="mb-1.5 block text-xs font-medium text-stone-600">Пароль</span>
         <input id="login-password" type="password" required autocomplete="current-password" placeholder="••••••••"
-               class="w-full rounded-lg border border-slate-700 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-sky-500">
+               class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600">
       </label>
-      <p id="login-error" hidden class="text-sm text-rose-400"></p>
+      <p id="login-error" hidden class="text-sm text-red-600"></p>
       <div class="flex justify-end gap-2 pt-1">
         <button id="login-cancel" type="button"
-                class="rounded-lg border border-slate-700 px-3.5 py-2 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:text-white">
+                class="rounded-md border border-stone-300 px-3.5 py-2 text-xs font-medium text-stone-700 transition hover:bg-stone-100">
           Отмена
         </button>
         <button type="submit"
-                class="rounded-lg bg-sky-500 px-3.5 py-2 text-xs font-semibold text-slate-950 transition hover:bg-sky-400">
+                class="rounded-md bg-teal-700 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-teal-800">
           Войти
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="product-dialog"
+          class="w-full max-w-lg rounded-xl border border-stone-200 bg-white p-6 text-stone-900 shadow-xl">
+    <form id="product-form" class="space-y-4">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 id="product-dialog-title" class="text-base font-semibold">Новый товар</h2>
+          <p class="mt-1 text-xs text-stone-500">Сразу после сохранения выполняется первый замер цены.</p>
+        </div>
+        <button id="product-close" type="button"
+                class="rounded-md p-1 text-stone-400 transition hover:bg-stone-100 hover:text-stone-700" aria-label="Закрыть">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" class="h-5 w-5">
+            <path d="m5 5 10 10M15 5 5 15" stroke-linecap="round"></path>
+          </svg>
+        </button>
+      </div>
+
+      <label class="block">
+        <span class="mb-1.5 block text-xs font-medium text-stone-600">Название</span>
+        <input id="f-title" required maxlength="500" placeholder="Например, Ноутбук DemoBook 15"
+               class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600">
+      </label>
+
+      <label class="block">
+        <span class="mb-1.5 block text-xs font-medium text-stone-600">Ссылка на товар</span>
+        <input id="f-url" type="url" required placeholder="http://127.0.0.1:8000/demo-store/laptop"
+               class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600 disabled:bg-stone-100 disabled:text-stone-500">
+        <span id="url-hint" hidden class="mt-1 block text-xs text-stone-400">Ссылку после создания изменить нельзя.</span>
+      </label>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="block">
+          <span class="mb-1.5 block text-xs font-medium text-stone-600">CSS-селектор</span>
+          <input id="f-selector" maxlength="255" placeholder=".product-price"
+                 class="w-full rounded-md border border-stone-300 px-3 py-2 font-mono text-sm focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600">
+          <span class="mt-1 block text-xs text-stone-400">Пусто — автопоиск цены.</span>
+        </label>
+        <label class="block">
+          <span class="mb-1.5 block text-xs font-medium text-stone-600">Целевая цена, ₽</span>
+          <input id="f-target" type="number" min="0" step="0.01" placeholder="90000"
+                 class="w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600">
+        </label>
+      </div>
+
+      <label class="block">
+        <span class="mb-1.5 block text-xs font-medium text-stone-600">Заметка</span>
+        <textarea id="f-notes" rows="2" maxlength="1000" placeholder="Необязательно: цвет, размер, магазин"
+                  class="w-full resize-none rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600"></textarea>
+      </label>
+
+      <p id="product-error" hidden class="text-sm text-red-600"></p>
+
+      <div class="flex flex-wrap items-center gap-2 border-t border-stone-200 pt-4">
+        <button id="product-submit" type="submit"
+                class="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800">
+          Добавить товар
+        </button>
+        <button id="fill-demo-laptop" type="button"
+                class="rounded-md border border-stone-300 px-3 py-2 text-xs font-medium text-stone-600 transition hover:bg-stone-100">
+          Пример: ноутбук
+        </button>
+        <button id="fill-demo-phone" type="button"
+                class="rounded-md border border-stone-300 px-3 py-2 text-xs font-medium text-stone-600 transition hover:bg-stone-100">
+          Пример: телефон
+        </button>
+        <button id="product-cancel" type="button"
+                class="ml-auto rounded-md border border-stone-300 px-3 py-2 text-xs font-medium text-stone-700 transition hover:bg-stone-100">
+          Отмена
         </button>
       </div>
     </form>

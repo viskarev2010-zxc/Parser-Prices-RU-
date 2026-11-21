@@ -8,6 +8,7 @@ class ProductCreate(BaseModel):
     url: HttpUrl
     css_selector: str | None = Field(default=None, max_length=255)
     target_price: float | None = Field(default=None, ge=0)
+    notes: str | None = Field(default=None, max_length=1000)
 
 
 class ProductOut(BaseModel):
@@ -18,8 +19,20 @@ class ProductOut(BaseModel):
     url: str
     css_selector: str | None
     target_price: float | None
+    notes: str | None = None
     created_at: datetime
     current_price: float | None = None
+    min_price: float | None = None
+    max_price: float | None = None
+    change_percent: float | None = None
+    checks_count: int = 0
+
+
+class ProductUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=500)
+    css_selector: str | None = Field(default=None, max_length=255)
+    target_price: float | None = Field(default=None, ge=0)
+    notes: str | None = Field(default=None, max_length=1000)
 
 
 class PriceHistoryOut(BaseModel):
@@ -29,6 +42,19 @@ class PriceHistoryOut(BaseModel):
     product_id: int
     price: float
     recorded_at: datetime
+
+
+class StatsOut(BaseModel):
+    total_products: int
+    deals_count: int
+    history_entries: int
+    last_check_at: datetime | None
+
+
+class CheckAllOut(BaseModel):
+    checked: int
+    updated: int
+    failed: int
 
 
 class AdminLogin(BaseModel):
