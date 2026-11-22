@@ -299,6 +299,24 @@ function emptyState() {
   return box;
 }
 
+function skeletonCard() {
+  const card = el("div", "rounded-lg border border-stone-200 bg-white p-4");
+  card.appendChild(el("div", "h-4 w-2/3 animate-pulse rounded bg-stone-100"));
+  card.appendChild(el("div", "mt-2 h-3 w-1/2 animate-pulse rounded bg-stone-100"));
+  card.appendChild(el("div", "mt-5 h-7 w-1/3 animate-pulse rounded bg-stone-100"));
+  card.appendChild(el("div", "mt-3 h-3 w-1/2 animate-pulse rounded bg-stone-100"));
+  card.appendChild(el("div", "mt-4 h-1 w-full animate-pulse rounded bg-stone-100"));
+  card.appendChild(el("div", "mt-5 h-8 w-full animate-pulse rounded bg-stone-100"));
+  return card;
+}
+
+function renderSkeletons() {
+  const grid = $("products-grid");
+  grid.replaceChildren();
+  for (let index = 0; index < 3; index += 1) grid.appendChild(skeletonCard());
+  $("products-count").textContent = "Загрузка…";
+}
+
 function renderProducts() {
   const grid = $("products-grid");
   grid.replaceChildren();
@@ -469,10 +487,13 @@ async function loadProducts() {
   if (state.filter.onlyDeals) params.set("only_deals", "true");
   params.set("sort", state.filter.sort);
 
+  if (!state.products.length) renderSkeletons();
+
   try {
     state.products = await api(`/api/products?${params.toString()}`);
   } catch (error) {
     toast(error.message, "error");
+    renderProducts();
     return;
   }
 

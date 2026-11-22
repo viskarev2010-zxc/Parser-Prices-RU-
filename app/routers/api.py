@@ -44,7 +44,7 @@ DEMO_PRODUCTS = (
     ("Смартфон DemoPhone X", "demo-store/phone", None, 50000.0),
 )
 
-SortKey = Literal["newest", "title", "price_asc", "price_desc"]
+SortKey = Literal["newest", "title", "price_asc", "price_desc", "savings"]
 
 
 def _current_price(product: Product) -> float | None:
@@ -243,6 +243,17 @@ def list_products(
         unpriced = [item for item in products if _current_price(item) is None]
         priced.sort(key=_current_price, reverse=sort == "price_desc")
         products = priced + unpriced
+    elif sort == "savings":
+        def savings(item: Product) -> float | None:
+            current = _current_price(item)
+            if current is None or item.target_price is None:
+                return None
+            return item.target_price - current
+
+        with_savings = [item for item in products if savings(item) is not None]
+        without_savings = [item for item in products if savings(item) is None]
+        with_savings.sort(key=savings, reverse=True)
+        products = with_savings + without_savings
 
     return [_to_out(product) for product in products]
 
@@ -366,6 +377,7 @@ def export_csv(
             "Отклонение от цели",
             "Замеров",
             "Последний замер",
+            "Заметка",
         ]
     )
 
@@ -387,6 +399,7 @@ def export_csv(
                 deviation,
                 len(prices),
                 prices[-1].recorded_at.strftime("%d.%m.%Y %H:%M") if prices else "",
+                product.notes or "",
             ]
         )
 

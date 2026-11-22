@@ -52,6 +52,7 @@ def build_workbook(products: list[Product]) -> BytesIO:
             "Актуальная цена",
             "Отклонение от цели (руб.)",
             "Дата последнего замера",
+            "Заметка",
         ],
     )
 
@@ -72,6 +73,7 @@ def build_workbook(products: list[Product]) -> BytesIO:
                 current_price,
                 deviation,
                 last.recorded_at if last else None,
+                product.notes or "",
             ]
         )
         row = current.max_row
